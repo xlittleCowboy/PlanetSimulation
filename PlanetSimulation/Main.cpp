@@ -11,12 +11,22 @@ int main()
     const int WindowHeight = 800;
 
     sf::RenderWindow Window(sf::VideoMode(WindowWidth, WindowHeight), "Planet Simulation", sf::Style::Close);
-    Window.setVerticalSyncEnabled(false);
-    Window.setFramerateLimit(60);
+    Window.setVerticalSyncEnabled(true);
+   // Window.setFramerateLimit(60);
 
     PlanetHandle* MainPlanetHandle = new PlanetHandle();
 
     sf::Clock DeltaClock;
+
+    sf::Font FPSFont;
+    sf::Text FPSText;
+    
+    sf::Clock FPSClock;
+    FPSFont.loadFromFile("arial.ttf");
+    FPSText.setFont(FPSFont);
+    FPSText.setFillColor(sf::Color::White);
+    FPSText.setCharacterSize(24);
+    FPSText.setPosition(sf::Vector2f(WindowWidth / 2, 0));
 
     while (Window.isOpen())
     {
@@ -42,9 +52,18 @@ int main()
 
         Window.clear();
 
-        float Deltatime = DeltaClock.restart().asSeconds();
+        float DeltaTime = DeltaClock.restart().asSeconds();
 
-        MainPlanetHandle->Update(Window, sf::Vector2f(WindowWidth, WindowHeight), Event, Deltatime);
+        MainPlanetHandle->Update(Window, sf::Vector2f(WindowWidth, WindowHeight), Event, DeltaTime);
+
+        if (FPSClock.getElapsedTime().asSeconds() >= 0.5f)
+        {
+            FPSText.setString("FPS:" + std::to_string(1 / DeltaTime));
+
+            FPSClock.restart();
+        }
+
+        Window.draw(FPSText);
 
         Window.display();
     }

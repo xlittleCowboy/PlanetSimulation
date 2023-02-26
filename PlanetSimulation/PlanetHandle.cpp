@@ -4,10 +4,10 @@ PlanetHandle::PlanetHandle()
 {
     RadiusToMassMultiplier = 5.0f;
 
-    MinRadius = 10.0f;
+    MinRadius = 25.0f;
     MinMass = MinRadius * RadiusToMassMultiplier;
 
-    StartRadius = 10.0f;
+    StartRadius = 25.0f;
     StartMass = StartRadius * RadiusToMassMultiplier;
 
     RadiusIncreaser = 1.0f;

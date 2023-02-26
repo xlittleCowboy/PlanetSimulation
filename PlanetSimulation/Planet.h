@@ -1,33 +1,46 @@
 #pragma once
 
 #include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
 #include <iostream>
 #include <vector>
 
 class Planet
 {
 private:
+	const float GravitationalConstant = pow(10, -2);
+
 	float Mass;
 
 	sf::CircleShape Shape;
 	sf::Vector2f Velocity;
 
-	float GetDistance(const Planet* OtherPlanet);
-	void CalculateGravityForces(std::vector<Planet*> Planets);
+	sf::SoundBuffer HitSoundBuffer;
+	sf::Sound HitSound;
 
-	void BorderCollisionCheck(const sf::Vector2f& BorderSize);
-	void PlanetsCollisionCheck(std::vector<Planet*> Planets);
+	void HandleBordersCollision(const sf::Vector2f& BorderSize);
+	void HandlePlanetsCollision(std::vector<Planet*> Planets);
+	void HandleGravityForces(std::vector<Planet*> Planets);
+
+	float GetIntersectionWithAnotherPlanet(Planet* OtherPlanet);
+	void KickOutOfAnotherPlanet(Planet* OtherPlanet);
+
+	const sf::Vector2f& GetVelocityOnPlanetCollision(Planet* OtherPlanet);
 
 public:
 	Planet(float Mass, float Radius, sf::Vector2f StartPosition, sf::Vector2f StartDirection, sf::Color Color);
 
 	void Update(sf::RenderWindow& Window, const sf::Vector2f& BorderSize, std::vector<Planet*> Planets, float DeltaTime);
 
-	const sf::CircleShape& GetShape() const { return Shape; }
-	const sf::Vector2f& GetVelocity() { return Velocity; }
-	float GetMass() { return Mass; }
-
 	void SetVelocity(const sf::Vector2f& Velocity);
-	const sf::Vector2f& GetNormalizedVector(const sf::Vector2f& Vector);
+	const sf::Vector2f& GetVelocity() { return Velocity; }
+
+	float GetDistanceToPlanet(const Planet* OtherPlanet);
+
+	const sf::Vector2f& GetCenterPosition(Planet* Planet);
+
+	const sf::CircleShape& GetShape() const { return Shape; }
+
+	float GetMass() { return Mass; }
 };
 

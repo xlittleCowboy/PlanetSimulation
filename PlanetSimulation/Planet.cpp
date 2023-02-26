@@ -6,6 +6,9 @@ Planet::Planet(float Mass, float Radius, sf::Vector2f StartPosition, sf::Vector2
 	this->Mass = Mass;
 	this->Velocity = StartDirection;
 
+	HitSoundBuffer.loadFromFile("Hit.wav");
+	HitSound.setBuffer(HitSoundBuffer);
+
 	Shape.setRadius(Radius);
 	Shape.setFillColor(Color);
 	Shape.setPosition(StartPosition - sf::Vector2f(1.0f, 1.0f) * Radius);
@@ -13,38 +16,53 @@ Planet::Planet(float Mass, float Radius, sf::Vector2f StartPosition, sf::Vector2
 
 void Planet::Update(sf::RenderWindow& Window, const sf::Vector2f& BorderSize, std::vector<Planet*> Planets, float DeltaTime)
 {
-	BorderCollisionCheck(BorderSize);
-	PlanetsCollisionCheck(Planets);
-	//CalculateGravityForces(Planets);
+	HandleBordersCollision(BorderSize);
+	HandlePlanetsCollision(Planets);
+	HandleGravityForces(Planets);
 
 	Shape.move(Velocity * DeltaTime);
 
 	Window.draw(Shape);
 }
 
-void Planet::SetVelocity(const sf::Vector2f& Velocity)
+void Planet::HandleBordersCollision(const sf::Vector2f& BorderSize)
 {
-	this->Velocity = Velocity;
-}
-
-const sf::Vector2f& Planet::GetNormalizedVector(const sf::Vector2f& Vector)
-{
-	return Vector / (sqrt(Vector.x * Vector.x + Vector.y * Vector.y));
-}
-
-void Planet::BorderCollisionCheck(const sf::Vector2f& BorderSize)
-{
-	if (Shape.getPosition().x <= 0 || Shape.getPosition().x >= BorderSize.x - Shape.getRadius() * 2)
+	if (Shape.getPosition().x < 0.0f)
 	{
 		Velocity.x *= -1;
+
+		Shape.setPosition(sf::Vector2f(0.0f, Shape.getPosition().y));
+
+		//HitSound.play();
 	}
-	if (Shape.getPosition().y <= 0 || Shape.getPosition().y >= BorderSize.y - Shape.getRadius() * 2)
+	else if (Shape.getPosition().x > BorderSize.x - Shape.getRadius() * 2)
+	{
+		Velocity.x *= -1;
+
+		Shape.setPosition(sf::Vector2f(BorderSize.x - Shape.getRadius() * 2, Shape.getPosition().y));
+
+		//HitSound.play();
+	}
+
+	if (Shape.getPosition().y < 0)
 	{
 		Velocity.y *= -1;
+
+		Shape.setPosition(sf::Vector2f(Shape.getPosition().x, 0.0f));
+
+		//HitSound.play();
+	}
+	else if (Shape.getPosition().y > BorderSize.y - Shape.getRadius() * 2)
+	{
+		Velocity.y *= -1;
+
+		Shape.setPosition(sf::Vector2f(Shape.getPosition().x, BorderSize.y - Shape.getRadius() * 2));
+
+		//HitSound.play();
 	}
 }
 
-void Planet::PlanetsCollisionCheck(std::vector<Planet*> Planets)
+void Planet::HandlePlanetsCollision(std::vector<Planet*> Planets)
 {
 	if (Planets.size() <= 1) return;
 
@@ -52,43 +70,22 @@ void Planet::PlanetsCollisionCheck(std::vector<Planet*> Planets)
 	{
 		if (*OtherPlanet == this) continue;
 
-		if (GetDistance(*OtherPlanet) <= (Shape.getRadius() + (*OtherPlanet)->GetShape().getRadius()))
+		if (GetIntersectionWithAnotherPlanet(*OtherPlanet) >= 0)
 		{
-			sf::Vector2f OtherPlanetVelocity = (*OtherPlanet)->GetVelocity();
+			KickOutOfAnotherPlanet(*OtherPlanet);
 
-			sf::Vector2f DeltaVelocity = Velocity - OtherPlanetVelocity;
+			sf::Vector2f CollisionVelocity = GetVelocityOnPlanetCollision(*OtherPlanet);
+			sf::Vector2f OtherPlanetCollisionVelocity = (*OtherPlanet)->GetVelocityOnPlanetCollision(this);
 
-			float OtherPlanetMass = (*OtherPlanet)->GetMass();
+			SetVelocity(CollisionVelocity);
+			(*OtherPlanet)->SetVelocity(OtherPlanetCollisionVelocity);
 
-			sf::Vector2f ThisPlanetPosition = Shape.getPosition() + sf::Vector2f(1.0f, 1.0f) * Shape.getRadius();
-			sf::Vector2f OtherPlanetPosition = (*OtherPlanet)->GetShape().getPosition()
-				+ sf::Vector2f(1.0f, 1.0f) * (*OtherPlanet)->GetShape().getRadius();
-
-			sf::Vector2f DeltaPosition = ThisPlanetPosition - OtherPlanetPosition;
-			float DistanceDeltaPosition = sqrt(DeltaPosition.x * DeltaPosition.x + DeltaPosition.y * DeltaPosition.y);
-
-			float VelocityAndPositionProduct = DeltaVelocity.x * DeltaPosition.x + DeltaVelocity.y * DeltaPosition.y;
-
-			Velocity -= ((2 * OtherPlanetMass * VelocityAndPositionProduct * DeltaPosition) /
-				((Mass + OtherPlanetMass) * DistanceDeltaPosition * DistanceDeltaPosition));
-
-			DeltaVelocity *= -1.0f;
-			DeltaPosition *= -1.0f;
-
-			DistanceDeltaPosition = sqrt(DeltaPosition.x * DeltaPosition.x + DeltaPosition.y * DeltaPosition.y);
-			VelocityAndPositionProduct = DeltaVelocity.x * DeltaPosition.x + DeltaVelocity.y * DeltaPosition.y;
-
-			(*OtherPlanet)->SetVelocity(OtherPlanetVelocity - ((2 * Mass * VelocityAndPositionProduct * DeltaPosition) /
-				((Mass + OtherPlanetMass) * DistanceDeltaPosition * DistanceDeltaPosition)));
-		}
-		else
-		{
-			CalculateGravityForces(Planets);
+			//HitSound.play();
 		}
 	}
 }
 
-void Planet::CalculateGravityForces(std::vector<Planet*> Planets)
+void Planet::HandleGravityForces(std::vector<Planet*> Planets)
 {
 	if (Planets.size() <= 1) return;
 
@@ -101,16 +98,42 @@ void Planet::CalculateGravityForces(std::vector<Planet*> Planets)
 		float X = OtherPlanerShape.getPosition().x + OtherPlanerShape.getRadius() - Shape.getPosition().x - Shape.getRadius();
 		float Y = OtherPlanerShape.getPosition().y + OtherPlanerShape.getRadius() - Shape.getPosition().y - Shape.getRadius();
 
-		float Distance = GetDistance(*OtherPlanet);
+		float Distance = GetDistanceToPlanet(*OtherPlanet);
 
 		sf::Vector2f Force(X / Distance, Y / Distance);
-		Force *= (float)((*OtherPlanet)->GetMass() * Mass / pow(Distance, 2));
+		Force *= GravitationalConstant * (float)((*OtherPlanet)->GetMass() * Mass / pow(Distance, 2));
 
 		Velocity += Force;
 	}
 }
 
-float Planet::GetDistance(const Planet* OtherPlanet)
+void Planet::KickOutOfAnotherPlanet(Planet* OtherPlanet)
+{
+	float Intersection = GetIntersectionWithAnotherPlanet(OtherPlanet);
+
+	sf::Vector2f IntersectionVector = (GetCenterPosition(this) - GetCenterPosition(OtherPlanet)) / GetDistanceToPlanet(OtherPlanet) * Intersection;
+
+	Shape.move(IntersectionVector); // "Kick" this planet out of another
+}
+
+const sf::Vector2f& Planet::GetVelocityOnPlanetCollision(Planet* OtherPlanet)
+{
+	sf::Vector2f DeltaVelocity = Velocity - OtherPlanet->GetVelocity();
+	sf::Vector2f DeltaPosition = GetCenterPosition(this) - GetCenterPosition(OtherPlanet);
+
+	float DistanceDeltaPosition = sqrt(DeltaPosition.x * DeltaPosition.x + DeltaPosition.y * DeltaPosition.y);
+	float VelocityAndPositionProduct = DeltaVelocity.x * DeltaPosition.x + DeltaVelocity.y * DeltaPosition.y;
+
+	return Velocity - ((2 * OtherPlanet->GetMass() * VelocityAndPositionProduct * DeltaPosition) /
+		((Mass + OtherPlanet->GetMass()) * DistanceDeltaPosition * DistanceDeltaPosition));
+}
+
+void Planet::SetVelocity(const sf::Vector2f& Velocity)
+{
+	this->Velocity = Velocity;
+}
+
+float Planet::GetDistanceToPlanet(const Planet* OtherPlanet)
 {
 	sf::CircleShape OtherPlanetShape = OtherPlanet->GetShape();
 
@@ -118,10 +141,18 @@ float Planet::GetDistance(const Planet* OtherPlanet)
 	float DirectionY = OtherPlanetShape.getPosition().y + OtherPlanetShape.getRadius() - Shape.getPosition().y - Shape.getRadius();
 
 	float Distance = sqrt(pow(DirectionX, 2) + pow(DirectionY, 2));
-	if (Distance < 1.0f)
-	{
-		Distance = 1.0f;
-	}
 
 	return Distance;
+}
+
+const sf::Vector2f& Planet::GetCenterPosition(Planet* Planet)
+{
+	sf::Vector2f RadiusVector = sf::Vector2f(1.0f, 1.0f) * Planet->GetShape().getRadius();
+
+	return Planet->GetShape().getPosition() + RadiusVector;
+}
+
+float Planet::GetIntersectionWithAnotherPlanet(Planet* OtherPlanet)
+{
+	return Shape.getRadius() + OtherPlanet->GetShape().getRadius() - GetDistanceToPlanet(OtherPlanet);
 }
