@@ -16,7 +16,7 @@ private:
     float StartRadius; 
     float StartMass;
 
-    float RadiusToMassMultiplier;
+    const float RadiusToMassMultiplier = 5.0f;
 
     float RadiusIncreaser;
     float MassIncreaser;
@@ -33,6 +33,9 @@ private:
     sf::Vector2f StartPosition;
     sf::Vector2f StartVelocity;
 
+    bool PlayHitSound;
+    bool EnableGravityForce;
+
     void ChangeRadius(float Delta);
 
     void DrawSampleShape(sf::RenderWindow& Window);
@@ -44,13 +47,13 @@ private:
     float Clamp(float Value, float Min, float Max);
 
 public:
-    PlanetHandle();
+    PlanetHandle(bool PlayHitSound, bool EnableGravityForce);
 
     ~PlanetHandle();
 
     void Update(sf::RenderWindow& Window, const sf::Vector2f& BorderSize, const sf::Event& Event, float DeltaTime);
 
-    void EventHandle(sf::RenderWindow& Window, const sf::Event& Event);
+    void EventsHandle(sf::RenderWindow& Window, const sf::Event& Event);
 
     void SpawnPlanet(const sf::Vector2i& MousePosition);
 };

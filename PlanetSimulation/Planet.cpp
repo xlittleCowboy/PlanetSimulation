@@ -1,13 +1,19 @@
 #include "Planet.h"
 #include <iostream>
 
-Planet::Planet(float Mass, float Radius, sf::Vector2f StartPosition, sf::Vector2f StartDirection, sf::Color Color)
+Planet::Planet(float Mass, float Radius, sf::Vector2f StartPosition, sf::Vector2f StartDirection, sf::Color Color,
+	bool PlayHitSound, bool EnableGravityForce)
 {
 	this->Mass = Mass;
 	this->Velocity = StartDirection;
 
-	HitSoundBuffer.loadFromFile("Hit.wav");
-	HitSound.setBuffer(HitSoundBuffer);
+	if (PlayHitSound)
+	{
+		HitSoundBuffer.loadFromFile("Hit.wav");
+		HitSound.setBuffer(HitSoundBuffer);
+	}
+
+	this->EnableGravityForce = EnableGravityForce;
 
 	Shape.setRadius(Radius);
 	Shape.setFillColor(Color);
@@ -18,7 +24,11 @@ void Planet::Update(sf::RenderWindow& Window, const sf::Vector2f& BorderSize, st
 {
 	HandleBordersCollision(BorderSize);
 	HandlePlanetsCollision(Planets);
-	HandleGravityForces(Planets);
+	
+	if (EnableGravityForce)
+	{
+		HandleGravityForces(Planets);
+	}
 
 	Shape.move(Velocity * DeltaTime);
 
@@ -33,7 +43,7 @@ void Planet::HandleBordersCollision(const sf::Vector2f& BorderSize)
 
 		Shape.setPosition(sf::Vector2f(0.0f, Shape.getPosition().y));
 
-		//HitSound.play();
+		HitSound.play();
 	}
 	else if (Shape.getPosition().x > BorderSize.x - Shape.getRadius() * 2)
 	{
@@ -41,7 +51,7 @@ void Planet::HandleBordersCollision(const sf::Vector2f& BorderSize)
 
 		Shape.setPosition(sf::Vector2f(BorderSize.x - Shape.getRadius() * 2, Shape.getPosition().y));
 
-		//HitSound.play();
+		HitSound.play();
 	}
 
 	if (Shape.getPosition().y < 0)
@@ -50,7 +60,7 @@ void Planet::HandleBordersCollision(const sf::Vector2f& BorderSize)
 
 		Shape.setPosition(sf::Vector2f(Shape.getPosition().x, 0.0f));
 
-		//HitSound.play();
+		HitSound.play();
 	}
 	else if (Shape.getPosition().y > BorderSize.y - Shape.getRadius() * 2)
 	{
@@ -58,7 +68,7 @@ void Planet::HandleBordersCollision(const sf::Vector2f& BorderSize)
 
 		Shape.setPosition(sf::Vector2f(Shape.getPosition().x, BorderSize.y - Shape.getRadius() * 2));
 
-		//HitSound.play();
+		HitSound.play();
 	}
 }
 
@@ -80,7 +90,7 @@ void Planet::HandlePlanetsCollision(std::vector<Planet*> Planets)
 			SetVelocity(CollisionVelocity);
 			(*OtherPlanet)->SetVelocity(OtherPlanetCollisionVelocity);
 
-			//HitSound.play();
+			HitSound.play();
 		}
 	}
 }
@@ -111,7 +121,7 @@ void Planet::KickOutOfAnotherPlanet(Planet* OtherPlanet)
 {
 	float Intersection = GetIntersectionWithAnotherPlanet(OtherPlanet);
 
-	sf::Vector2f IntersectionVector = (GetCenterPosition(this) - GetCenterPosition(OtherPlanet)) / GetDistanceToPlanet(OtherPlanet) * Intersection;
+	sf::Vector2f IntersectionVector = (GetCenterPosition() - OtherPlanet->GetCenterPosition()) / GetDistanceToPlanet(OtherPlanet) * Intersection;
 
 	Shape.move(IntersectionVector); // "Kick" this planet out of another
 }
@@ -119,7 +129,7 @@ void Planet::KickOutOfAnotherPlanet(Planet* OtherPlanet)
 const sf::Vector2f& Planet::GetVelocityOnPlanetCollision(Planet* OtherPlanet)
 {
 	sf::Vector2f DeltaVelocity = Velocity - OtherPlanet->GetVelocity();
-	sf::Vector2f DeltaPosition = GetCenterPosition(this) - GetCenterPosition(OtherPlanet);
+	sf::Vector2f DeltaPosition = GetCenterPosition() - OtherPlanet->GetCenterPosition();
 
 	float DistanceDeltaPosition = sqrt(DeltaPosition.x * DeltaPosition.x + DeltaPosition.y * DeltaPosition.y);
 	float VelocityAndPositionProduct = DeltaVelocity.x * DeltaPosition.x + DeltaVelocity.y * DeltaPosition.y;
@@ -145,11 +155,11 @@ float Planet::GetDistanceToPlanet(const Planet* OtherPlanet)
 	return Distance;
 }
 
-const sf::Vector2f& Planet::GetCenterPosition(Planet* Planet)
+const sf::Vector2f& Planet::GetCenterPosition()
 {
-	sf::Vector2f RadiusVector = sf::Vector2f(1.0f, 1.0f) * Planet->GetShape().getRadius();
+	sf::Vector2f RadiusVector = sf::Vector2f(1.0f, 1.0f) * Shape.getRadius();
 
-	return Planet->GetShape().getPosition() + RadiusVector;
+	return Shape.getPosition() + RadiusVector;
 }
 
 float Planet::GetIntersectionWithAnotherPlanet(Planet* OtherPlanet)

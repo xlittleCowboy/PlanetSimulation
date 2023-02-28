@@ -1,8 +1,8 @@
 #include "PlanetHandle.h"
 
-PlanetHandle::PlanetHandle()
+PlanetHandle::PlanetHandle(bool PlayHitSound, bool EnableGravityForce)
 {
-    RadiusToMassMultiplier = 5.0f;
+    srand(time(0)); 
 
     MinRadius = 25.0f;
     MinMass = MinRadius * RadiusToMassMultiplier;
@@ -16,11 +16,13 @@ PlanetHandle::PlanetHandle()
     MaxRadius = 50.0f;
     MaxMass = MaxRadius * RadiusToMassMultiplier;
 
-    srand(time(0));
-
     StartColor = sf::Color(std::rand() % 255, std::rand() % 255, std::rand() % 255);
 
     IsLMBPressed = false;
+
+    this->PlayHitSound = PlayHitSound;
+    
+    this->EnableGravityForce = EnableGravityForce;
 }
 
 PlanetHandle::~PlanetHandle()
@@ -31,7 +33,7 @@ PlanetHandle::~PlanetHandle()
     }
 }
 
-void PlanetHandle::EventHandle(sf::RenderWindow& Window, const sf::Event& Event)
+void PlanetHandle::EventsHandle(sf::RenderWindow& Window, const sf::Event& Event)
 {
     if (Event.type == sf::Event::MouseWheelMoved)
     {
@@ -78,7 +80,7 @@ void PlanetHandle::SpawnPlanet(const sf::Vector2i& MousePosition)
     StartVelocity.x = MousePosition.x - StartPosition.x;
     StartVelocity.y = MousePosition.y - StartPosition.y;
 
-    Planet* NewPlanet = new Planet(StartMass, StartRadius, StartPosition, StartVelocity, StartColor);
+    Planet* NewPlanet = new Planet(StartMass, StartRadius, StartPosition, StartVelocity, StartColor, PlayHitSound, EnableGravityForce);
 
     Planets.push_back(NewPlanet);
 

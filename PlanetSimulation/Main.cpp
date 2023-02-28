@@ -5,29 +5,25 @@
 #include "Planet.h"
 #include "PlanetHandle.h"
 
+/*
+    SPAWN NEW PLANETS WITH LMB
+    HOLD LMB AND DRAG IT IN THE DIRECTION YOU WANT NEW PLANET TO MOVE
+    USE SCROLLWHEEL TO CHANGE RADIUS & MASS OF NEW PLANET
+*/
+
 int main()
 {
+    // Window setup
     const int WindowWidth = 800;
     const int WindowHeight = 800;
 
     sf::RenderWindow Window(sf::VideoMode(WindowWidth, WindowHeight), "Planet Simulation", sf::Style::Close);
-    Window.setVerticalSyncEnabled(true);
-   // Window.setFramerateLimit(60);
 
-    PlanetHandle* MainPlanetHandle = new PlanetHandle();
+    PlanetHandle* MainPlanetHandle = new PlanetHandle(false, false); // Enable/disable hit sound & gravity force
 
     sf::Clock DeltaClock;
 
-    sf::Font FPSFont;
-    sf::Text FPSText;
-    
-    sf::Clock FPSClock;
-    FPSFont.loadFromFile("arial.ttf");
-    FPSText.setFont(FPSFont);
-    FPSText.setFillColor(sf::Color::White);
-    FPSText.setCharacterSize(24);
-    FPSText.setPosition(sf::Vector2f(WindowWidth / 2, 0));
-
+    // Main lopp
     while (Window.isOpen())
     {
         sf::Event Event;
@@ -46,24 +42,16 @@ int main()
                 }
             }
 
-            MainPlanetHandle->EventHandle(Window, Event);
+            MainPlanetHandle->EventsHandle(Window, Event);
      
         }
 
+        // Draw & Display
         Window.clear();
 
         float DeltaTime = DeltaClock.restart().asSeconds();
 
         MainPlanetHandle->Update(Window, sf::Vector2f(WindowWidth, WindowHeight), Event, DeltaTime);
-
-        if (FPSClock.getElapsedTime().asSeconds() >= 0.5f)
-        {
-            FPSText.setString("FPS:" + std::to_string(1 / DeltaTime));
-
-            FPSClock.restart();
-        }
-
-        Window.draw(FPSText);
 
         Window.display();
     }

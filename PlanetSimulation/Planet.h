@@ -18,6 +18,8 @@ private:
 	sf::SoundBuffer HitSoundBuffer;
 	sf::Sound HitSound;
 
+	bool EnableGravityForce;
+
 	void HandleBordersCollision(const sf::Vector2f& BorderSize);
 	void HandlePlanetsCollision(std::vector<Planet*> Planets);
 	void HandleGravityForces(std::vector<Planet*> Planets);
@@ -28,16 +30,17 @@ private:
 	const sf::Vector2f& GetVelocityOnPlanetCollision(Planet* OtherPlanet);
 
 public:
-	Planet(float Mass, float Radius, sf::Vector2f StartPosition, sf::Vector2f StartDirection, sf::Color Color);
+	Planet(float Mass, float Radius, sf::Vector2f StartPosition, sf::Vector2f StartDirection, sf::Color Color,
+		bool PlayHitSound, bool EnableGravityForce);
 
 	void Update(sf::RenderWindow& Window, const sf::Vector2f& BorderSize, std::vector<Planet*> Planets, float DeltaTime);
 
-	void SetVelocity(const sf::Vector2f& Velocity);
 	const sf::Vector2f& GetVelocity() { return Velocity; }
+	void SetVelocity(const sf::Vector2f& Velocity);
 
 	float GetDistanceToPlanet(const Planet* OtherPlanet);
 
-	const sf::Vector2f& GetCenterPosition(Planet* Planet);
+	const sf::Vector2f& GetCenterPosition();
 
 	const sf::CircleShape& GetShape() const { return Shape; }
 
